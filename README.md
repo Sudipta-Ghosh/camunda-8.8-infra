@@ -139,6 +139,25 @@ camunda-8-infrastructure/
 
 ---
 
+## Available URLs
+
+Once port-forwarding is active, access the UIs in your browser:
+
+| Component | URL | Description |
+|---|---|---|
+| Zeebe Gateway (gRPC) | http://localhost:26500 | Process deployment and execution |
+| Zeebe Gateway (HTTP) | http://localhost:8080/ | Zeebe REST API |
+| Operate | http://localhost:8080/operate | Monitor process instances |
+| Tasklist | http://localhost:8080/tasklist | Complete user tasks |
+| Web Modeler | http://localhost:8070 | Design and deploy processes |
+| Console | http://localhost:8087 | Manage clusters and APIs |
+| Identity | http://localhost:8088/identity | User and permission management for the orchestration cluster |
+| Management Identity | http://localhost:18081 | User and permission management |
+| Keycloak | http://localhost:18080 | Authentication server |
+| Optimize | http://localhost:8083 | Process analytics |
+| Connectors | http://localhost:8085 | External system integrations in table format |
+
+
 <!-- MongoDB exporter documentation removed from this README. -->
 
 ---
@@ -204,13 +223,5 @@ camunda-8-infrastructure/
 
 ---
 
-## Rollbacks and Cleanup
+<!-- Rollbacks and Cleanup removed -->
 ```powershell
-# Uninstall the Helm release
-helm uninstall camunda-platform -n camunda
-
-# Delete the namespace
-kubectl delete namespace camunda
-
-<!-- Optional: remove custom Docker image if present -->
-```
