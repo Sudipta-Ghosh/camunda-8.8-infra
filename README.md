@@ -1,19 +1,13 @@
 
 # Camunda 8 Infrastructure — Kind Cluster
 
-> **Camunda 8.8.11** on a local **Kind** Kubernetes cluster with a full **Elasticsearch archival / retention / deletion** pipeline.
+> **Camunda 8.8.11** on a local  Kubernetes cluster .
 
 ## Table of Contents
-1. [Architecture Overview](#architecture-overview)
-2. [Data Flow — Sequence](#data-flow--sequence)
-3. [Repository Layout](#repository-layout)
-4. [Prerequisites](#prerequisites)
-5. [Step-by-Step Deployment](#step-by-step-deployment)
-6. [Timeline — Archival & Deletion (Authoritative)](#timeline--archival--deletion-authoritative)
-7. [Elasticsearch Archival, Retention & Deletion](#elasticsearch-archival-retention--deletion)
-8. [End-to-End Verification](#end-to-end-verification)
-9. [Common Issues & Fixes](#common-issues--fixes)
-10. [Rollbacks and Cleanup](#rollbacks-and-cleanup)
+1. [Repository Layout](#repository-layout)
+2. [Prerequisites](#prerequisites)
+3. [Step-by-Step Deployment](#step-by-step-deployment)
+4. [Available URLs](#available-urls)
 
 
 ## Repository Layout
