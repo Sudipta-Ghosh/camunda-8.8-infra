@@ -1,9 +1,17 @@
 
-# Camunda 8 Infrastructure — Kind Cluster with MongoDB Exporter
+# Camunda 8 Infrastructure — Kind Cluster
 
-> **Camunda 8.8.11** on a local **Kind** Kubernetes cluster with a custom **MongoDB Exporter** and full **Elasticsearch archival / retention / deletion** pipeline.
+> **Camunda 8.8.11** on a local **Kind** Kubernetes cluster with a full **Elasticsearch archival / retention / deletion** pipeline.
+> The MongoDB exporter has been removed from the default configuration; exporter-related build artifacts are optional.
 
 ---
+
+## Note: MongoDB exporter removed
+
+- **What changed:** The MongoDB exporter configuration and the related `ZEEBE_BROKER_EXPORTERS_MONGODB_*` environment variables were removed from `camunda-values.yaml`.
+- **When:** 2026-02-26
+- **Why:** Removed per recent configuration change; the Elasticsearch exporter and archival/retention pipeline remain active.
+- **To re-enable:** Re-add the exporter block and env vars to [camunda-values.yaml](camunda-values.yaml) and ensure the exporter JAR/image is available.
 
 ## Table of Contents
 1. [Architecture Overview](#architecture-overview)
@@ -71,12 +79,12 @@ On PROCESS completion:
 ## Repository Layout
 ```
 camunda-8-infrastructure/
-├── camunda-values.yaml            # Helm values (MongoDB exporter, archival, retention, ES tuning)
+├── camunda-values.yaml            # Helm values (exporter removed; archival, retention, ES tuning)
 ├── deploy-camunda.ps1             # One-click deploy script (Terraform + Helm)
-├── build-zeebe-mongodb.ps1        # Build custom Zeebe Docker image with MongoDB exporter JAR
+├── build-zeebe-mongodb.ps1        # OPTIONAL: build Zeebe image with MongoDB exporter (deprecated)
 ├── port-forward-camunda.ps1       # Port-forward all services to localhost
-├── Dockerfile.zeebe-mongodb       # Dockerfile: camunda/camunda:8.8.11 + MongoDB exporter JAR
-├── Dockerfile.zeebe-mongodb-local # Local build variant
+├── Dockerfile.zeebe-mongodb       # OPTIONAL: Dockerfile including MongoDB exporter JAR (deprecated)
+├── Dockerfile.zeebe-mongodb-local # OPTIONAL: Local build variant (deprecated)
 ├── test-archiving.ps1             # Script to test archival/retention pipeline
 ├── test-archiving-api.ps1         # API-level archival test script
 ├── main.tf                        # Terraform Helm release resource
@@ -99,8 +107,8 @@ camunda-8-infrastructure/
 | Helm | v3.12+ | Chart management |
 | Terraform | ≥ 1.3.0 | Infrastructure-as-code (optional) |
 | PowerShell | 5.1+ | Deployment scripts (Windows) |
-| Java | 21 | Build MongoDB exporter (if building from source) |
-| Maven | 3.9+ | Build MongoDB exporter (if building from source) |
+| Java | 21 | Optional — only needed to build the MongoDB exporter from source |
+| Maven | 3.9+ | Optional — only needed to build the MongoDB exporter from source |
 
 ---
 
