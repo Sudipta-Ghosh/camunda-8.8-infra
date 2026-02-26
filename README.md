@@ -43,26 +43,41 @@ camunda-8-infrastructure/
 | Helm | v3.12+ | Chart management |
 | Terraform | ≥ 1.3.0 | Infrastructure-as-code (optional) |
 | PowerShell | 5.1+ | Deployment scripts (Windows) |
-| Java | 21 | Optional — only needed to build the exporter from source |
-| Maven | 3.9+ | Optional — only needed to build the exporter from source |
-
 ---
 
 ## Step-by-Step Deployment
+### Pre-deployment Verification
 
-### Optional — Build the Custom Zeebe Image (exporter image)
+Run these quick checks before deploying to ensure your local environment is ready.
+
 ```powershell
-# OPTIONAL: only required if you want to build the exporter image
-# From the camunda-8-infrastructure directory
-.\build-zeebe-mongodb.ps1 -ImageName "zeebe-mongodb-exporter" -Tag "8.8.11-mongodb-v2"
+# Docker running
+docker info
+
+# kubectl connectivity
+kubectl cluster-info
+kubectl get nodes -o wide
+
+# CLI versions
+helm version
+kubectl version --client
+
+# Terraform CLI
+terraform version
+
+# Ensure values file exists
+Test-Path .\camunda-values.yaml
+
+# OPTIONAL: verify local custom Zeebe image if used
+docker images | Where-Object { $_.Repository -like 'zeebe*' }
 ```
 
-### Step 2 — Deploy Camunda
+### Step 1 — Deploy Camunda
 ```powershell
 .\deploy-camunda.ps1 -ValuesFile '.\camunda-values.yaml' -AutoApprove -RecreateNamespace -ForceHelmInstall
 ```
 
-### Step 3 — Port-Forward Services
+### Step 2 — Port-Forward Services
 ```powershell
 .\port-forward-camunda.ps1
 ```
