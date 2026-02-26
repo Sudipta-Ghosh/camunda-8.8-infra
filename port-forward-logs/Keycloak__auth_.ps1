@@ -1,0 +1,2 @@
+﻿[Console]::Title='Keycloak (auth)'
+try { & { kubectl -n camunda port-forward svc/camunda-platform-keycloak 18080:80 2>&1 | Tee-Object -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Keycloak__auth_.log' } } catch { \ | Out-File -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Keycloak__auth_.log' -Append }

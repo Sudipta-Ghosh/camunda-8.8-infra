@@ -1,0 +1,2 @@
+﻿[Console]::Title='Zeebe Gateway (26500)'
+try { & { kubectl -n camunda port-forward svc/camunda-platform-zeebe-gateway 26500:26500 2>&1 | Tee-Object -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Zeebe_Gateway__26500_.log' } } catch { \ | Out-File -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Zeebe_Gateway__26500_.log' -Append }

@@ -1,0 +1,2 @@
+﻿[Console]::Title='Elasticsearch (master)'
+try { & { kubectl -n camunda port-forward pod/camunda-platform-elasticsearch-master-0 9200:9200 2>&1 | Tee-Object -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Elasticsearch__master_.log' } } catch { \ | Out-File -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Elasticsearch__master_.log' -Append }

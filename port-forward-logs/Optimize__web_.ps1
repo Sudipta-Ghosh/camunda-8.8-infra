@@ -1,0 +1,2 @@
+﻿[Console]::Title='Optimize (web)'
+try { & { kubectl -n camunda port-forward svc/camunda-platform-optimize 8083:80 2>&1 | Tee-Object -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Optimize__web_.log' } } catch { \ | Out-File -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Optimize__web_.log' -Append }

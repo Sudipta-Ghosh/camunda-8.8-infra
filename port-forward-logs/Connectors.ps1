@@ -1,0 +1,2 @@
+﻿[Console]::Title='Connectors'
+try { & { kubectl -n camunda port-forward svc/camunda-platform-connectors 8085:8080 2>&1 | Tee-Object -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Connectors.log' } } catch { \ | Out-File -FilePath 'C:\Workspace\Camunda8\camunda-infra\camunda-8-infrastructure\K8_Kind\camunda-8-infrastructure\port-forward-logs\Connectors.log' -Append }
