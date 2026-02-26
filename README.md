@@ -62,8 +62,7 @@ terraform version
 # Ensure values file exists
 Test-Path .\camunda-values.yaml
 
-# OPTIONAL: verify local custom Zeebe image if used
-docker images | Where-Object { $_.Repository -like 'zeebe*' }
+
 ```
 
 ### Step 1 — Deploy Camunda
@@ -107,5 +106,17 @@ Once port-forwarding is active, access the UIs in your browser:
 | Keycloak | http://localhost:18080 | Authentication server |
 | Optimize | http://localhost:8083 | Process analytics |
 | Connectors | http://localhost:8085 | External system integrations in table format |
+
+
+---
+
+## Post-deployment Verification
+
+After deployment and port-forwarding, verify pods and retrieve the initial identity user password:
+
+```powershell
+kubectl -n camunda get pods
+kubectl get secret camunda-credentials -n camunda -o jsonpath='{.data.identity-firstuser-password}' | base64 -d
+```
 
 
