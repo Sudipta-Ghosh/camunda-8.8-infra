@@ -78,10 +78,6 @@ webModelerPostgresql:
       userPasswordKey: "webmodeler-postgresql-user-password"
 
 orchestration:
-  image:
-    repository: zeebe-mongodb-exporter
-    tag: 8.8.11-mongodb-v2
-    pullPolicy: Never
   resources:
     requests:
       cpu: "500m"
