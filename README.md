@@ -19,12 +19,11 @@
 3. [Repository Layout](#repository-layout)
 4. [Prerequisites](#prerequisites)
 5. [Step-by-Step Deployment](#step-by-step-deployment)
-6. [MongoDB Exporter — How It Works](#mongodb-exporter--how-it-works)
-7. [Timeline — Archival & Deletion (Authoritative)](#timeline--archival--deletion-authoritative)
-8. [Elasticsearch Archival, Retention & Deletion](#elasticsearch-archival-retention--deletion)
-9. [End-to-End Verification](#end-to-end-verification)
-10. [Common Issues & Fixes](#common-issues--fixes)
-11. [Rollbacks and Cleanup](#rollbacks-and-cleanup)
+6. [Timeline — Archival & Deletion (Authoritative)](#timeline--archival--deletion-authoritative)
+7. [Elasticsearch Archival, Retention & Deletion](#elasticsearch-archival-retention--deletion)
+8. [End-to-End Verification](#end-to-end-verification)
+9. [Common Issues & Fixes](#common-issues--fixes)
+10. [Rollbacks and Cleanup](#rollbacks-and-cleanup)
 
 ---
 
@@ -45,7 +44,7 @@
 │  │        │                        │                                     │  │
 │  │        │                        │                                     │  │
 │  │        ▼                        ▼                                     │  │
-│  │  MongoDB Exporter (custom JAR)  Elasticsearch (runtime + archives)     │  │
+│  │  Elasticsearch (runtime + archives)                                     │  │
 │  │                                                                        │  │
 │  │  Operate module (webapp+archiver), Tasklist module                     │  │
 │  └────────────────────────────────────────────────────────────────────────┘  │
@@ -55,10 +54,8 @@
 │  Identity + Keycloak (OIDC), Optimize, Connectors, Console, Web Modeler      │
 └──────────────────────────────────────────────────────────────────────────────┘
 
-           ▼
-       MongoDB Atlas (Cloud)
-       Database: camunda_zeebe
-       Collection: zeebe_records_* (completed process instances)
+             ▼
+           Elasticsearch (external / managed)
 ```
 
 ---
@@ -66,12 +63,10 @@
 ## Data Flow — Sequence
 ```
 Client → Zeebe Broker → (1) emit records → CamundaExporter → Elasticsearch
-                         (2) same stream → MongoDB Exporter → MongoDB Atlas
 
 On PROCESS completion:
 - Variables are accumulated per processInstanceKey.
-- A rich document is built on ELEMENT_COMPLETED (PROCESS) and upserted to MongoDB in batches.
-- In ES, completed runtime docs become eligible for archival; rollover creates date-suffixed indices; ILM deletes them after minimumAge.
+- A rich document is built on ELEMENT_COMPLETED (PROCESS) and forwarded to the archival pipeline (Elasticsearch indices and ILM policies).
 ```
 
 ---
@@ -144,52 +139,17 @@ camunda-8-infrastructure/
 
 ---
 
-## MongoDB Exporter — How It Works
-- Accepts **all** record types (required to advance the Zeebe export position).
-- **Writes** to MongoDB only when the top-level `PROCESS` element receives `ELEMENT_COMPLETED`.
-- Accumulates variables in memory keyed by `processInstanceKey`.
-- Uses batch `BulkWrite` with `ReplaceOneModel(..., upsert: true)` — idempotent and duplicate-safe.
-
-**Document example (simplified):**
-```json
-{
-  "processInstanceKey": 2251799813685270,
-  "bpmnProcessId": "order-process",
-  "processVersion": 1,
-  "processDefinitionKey": 2251799813685255,
-  "state": "COMPLETED",
-  "startTime": "2026-02-17T10:30:00.000Z",
-  "endTime": "2026-02-17T10:30:45.678Z",
-  "durationMs": 45678,
-  "partitionId": 1,
-  "tenantId": "<default>",
-  "variables": {
-    "orderId": "ORD-12345",
-    "amount": 99.99,
-    "approved": true
-  }
-}
-```
-
-**Key env vars (set via `orchestration.env` in `camunda-values.yaml`):**
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_CLASSNAME = io.github.camunda8.mongodb.exporter.MongoDBExporter`
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_JARPATH = /usr/local/zeebe/exporters/camunda8-mongodb-exporter-1.0-SNAPSHOT.jar`
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_ARGS_CONNECTIONURI = <your MongoDB connection string>`
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_ARGS_DATABASE = camunda_zeebe`
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_ARGS_COLLECTION = zeebe_records`
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_ARGS_BATCHSIZE = 100`
-- `ZEEBE_BROKER_EXPORTERS_MONGODB_ARGS_FLUSHINTERVAL = 1000`
+<!-- MongoDB exporter documentation removed from this README. -->
 
 ---
 
 ## Timeline — Archival & Deletion (Authoritative)
 
-> Values reflect your `camunda-values.yaml`: `waitPeriodBeforeArchiving=5m`, `rolloverInterval=1h`, history `minimumAge=5m`, zeebe-records `minimumAge=3m`, ES ILM poll `10s`, MongoDB flush `1000ms` / `batchSize=100`.
+> Values reflect your `camunda-values.yaml`: `waitPeriodBeforeArchiving=5m`, `rolloverInterval=1h`, history `minimumAge=5m`, zeebe-records `minimumAge=3m`, ES ILM poll `10s`.
 
 | **Time from process completion** | **Action** | **Affected indices / store** | **Who/Where** | **Config key(s)** | **Effective value(s)** | **Notes** |
 |---|---|---|---|---|---|---|
-| **T + 0s** | Process instance **completes**; Zeebe appends ordered records and exporters consume the stream | Zeebe log | Zeebe Broker + Exporters | — | — | Triggers both ES and MongoDB paths.
-| **T + ~1s** | Batch **flush to MongoDB** of completed instance document (upsert) | `camunda_zeebe.zeebe_records…` (MongoDB) | MongoDB Exporter | `…MONGODB_ARGS_BATCHSIZE`, `…MONGODB_ARGS_FLUSHINTERVAL` | `100`, `1000ms` | Flushes on size or timer; writes only on process **COMPLETE**.
+| **T + 0s** | Process instance **completes**; Zeebe appends ordered records and exporters consume the stream | Zeebe log | Zeebe Broker + Exporters | — | — | Triggers ES archival pipeline.
 | **T + 5m** | **Eligible for archival** after wait period | Live runtime indices like `operate-*`, `tasklist-*` | CamundaExporter / Archiver | `orchestration.history.waitPeriodBeforeArchiving` | `5m` | Eligibility window opens; rollover waits for next tick.
 | **T + 5m → T + 65m** | **Rollover / Archival** runs on **next tick**; data moved to **date‑suffixed** archived indices | `operate-*-<date>`, `tasklist-*-<date>` | CamundaExporter / Archiver | `orchestration.history.rolloverInterval`, `…elsRolloverDateFormat` | `1h`, `date` | With 1h interval, rollover may occur immediately after eligibility or up to ~1h later.
 | **Immediately after rollover + every ~10s** | **ILM policy attached & evaluated** frequently | Archived indices (`operate-*_<date>`, `tasklist-*_<date>`) | Elasticsearch ILM | `orchestration.history.retention.policyName`, ES `indices.lifecycle.poll_interval` | `camunda-history-retention-policy`, `10s` | Fast ILM polling accelerates delete-phase evaluation.
@@ -227,13 +187,11 @@ camunda-8-infrastructure/
 
 ## End-to-End Verification
 1. Check pods: `kubectl -n camunda get pods` (all Ready).
-2. Verify MongoDB exporter logs: `kubectl -n camunda logs camunda-platform-zeebe-0 | Select-String "MongoDBExporter"`.
-3. Verify archival config in logs: `Select-String "CamundaExporter|archiv|retention|rollover"`.
-4. Deploy a BPMN, run instances, complete them.
-5. Check ES indices: `/_cat/indices?v&s=index` and look for date-suffixed `*_YYYY-MM-DD`.
-6. Check ILM policy: `/_ilm/policy/camunda-history-retention-policy` and `/_ilm/explain` on an archived index.
-7. Verify deletion after `minimumAge` + shard lease period.
-8. Verify Mongo data in Atlas: `db.zeebe_records_completed_process_instances.find().sort({ endTime: -1 }).limit(5)`.
+2. Verify archival config in logs: `Select-String "CamundaExporter|archiv|retention|rollover"`.
+3. Deploy a BPMN, run instances, complete them.
+4. Check ES indices: `/_cat/indices?v&s=index` and look for date-suffixed `*_YYYY-MM-DD`.
+5. Check ILM policy: `/_ilm/policy/camunda-history-retention-policy` and `/_ilm/explain` on an archived index.
+6. Verify deletion after `minimumAge` + shard lease period.
 
 ---
 
@@ -242,7 +200,7 @@ camunda-8-infrastructure/
 - **Archived indices not deleting** → lower `index.soft_deletes.retention_lease.period` (for tests) or wait for ILM.
 - **ILM policy not found** → it’s created during rollover; wait for the rollover cycle to run once.
 - **Elasticsearch OOMKilled** → ensure heap via `ELASTICSEARCH_HEAP_SIZE` is < container memory.
-- **MongoDB exporter not writing** → check JAR path, exporter logs, and Atlas network access.
+<!-- MongoDB-specific troubleshooting removed. -->
 
 ---
 
@@ -254,6 +212,5 @@ helm uninstall camunda-platform -n camunda
 # Delete the namespace
 kubectl delete namespace camunda
 
-# Remove the custom Docker image
-docker rmi zeebe-mongodb-exporter:8.8.11-mongodb-v2
+<!-- Optional: remove custom Docker image if present -->
 ```
